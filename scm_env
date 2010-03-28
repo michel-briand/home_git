@@ -1,0 +1,144 @@
+#!/bin/bash
+#
+# -*-coding:iso-8859-15;-*-
+#
+# Modified: Sat Mar 13 12:06:34 2010
+#
+# Environnement bash pour la gestion de conf.
+#
+
+    # uid=>couleur
+    # user@host {status}
+    # scm=>
+    # oui     repo|br subdir
+    # non     dir
+    # $
+
+export promptF_COLORS=( "\[\033[0;32m\]" "\[\033[0;36m\]" "\[\033[0;35m\]" )
+export promptF_NO_COLOR="\[\033[0m\]"
+export promptF_RED="\[\033[0;31m\]"
+export promptF_BOLD="\[\033[1m\]"
+export promptF_defcolor=${promptF_COLORS[2]}
+export promptF_status="uninitialized"
+export promptF_scm_status=""
+export promptF_enable_titlebar=1
+
+function promptF_color() {
+    case $USER in
+	root) return 1;;
+	michel) return 2;;
+	*) return 3;;
+    esac
+}
+export -f promptF_color
+
+function promptF_setup() {
+    local c
+    promptF_color
+    c=$?
+    promptF_defcolor=${promptF_COLORS[$c]}
+    promptF_status="setup"
+
+    # only set titlebar in a capable terminal:
+    case $TERM in
+	rxvt*|xterm*|gnome*|konsole*)
+	    promptF_enable_titlebar=0
+            ;;
+    esac
+    export PROMPT_COMMAND="promptF_update"
+}
+export -f promptF_setup
+
+function promptF_update() {
+    local titlebar
+#    promptF_curdir
+    if promptF_under_scm ; then
+	promptF_status=" ${promptF_BOLD}$promptF_scm_status${promptF_defcolor}"
+    else
+	promptF_status=""
+    fi
+    if [ $promptF_enable_titlebar -eq 0 ] ; then
+        titlebar="\033]2;${USER}@${HOSTNAME} $promptF_scm_status\007"
+	# since we are in PROMPT_COMMAND callback, 
+	# let's write directly to stdout
+	echo -ne $titlebar
+    fi
+    export PS1="${promptF_defcolor}\u@\h${promptF_status} \w \$ $promptF_NO_COLOR"
+}
+export -f promptF_update
+
+# fonction désactivée: trouver mieux!
+function promptF_curdir() {
+    local cwd
+    if [ ${#PWD} -gt 20 ] ; then
+	cwd="...${PWD:10}"
+    else
+	cwd=${PWD}
+    fi 
+    promptF_PWD=$cwd
+}
+export -f promptF_curdir
+
+# à étendre en fonction des différents scm
+function promptF_under_scm() {
+    if promptF_scm_check_CVS ; then
+	return 0
+    elif promptF_scm_check_SVN ; then
+	return 0
+    elif promptF_scm_check_GIT ; then
+	return 0
+    else
+	return 1
+    fi
+}
+export -f promptF_under_scm
+
+function promptF_scm_check_CVS {
+    if [ -d "CVS" ] ; then
+	promptF_scm_status="in CVS wk"
+	return 0
+    fi
+    return 1
+}
+export -f promptF_scm_check_CVS
+
+function promptF_scm_check_SVN {
+    if [ -d ".svn" ] ; then
+	promptF_scm_status="in SVN wk"
+	return 0
+    fi
+    return 1
+}
+export -f promptF_scm_check_SVN
+
+function promptF_scm_check_GIT {
+    local dir=. head gt
+    until [ "$dir" -ef / ]; do
+	for gt in "$GIT_DIR" "$dir/.git" ; do
+            if [ -f "$gt/HEAD" ]; then
+		head=$(< "$gt/HEAD")
+		if [[ $head == ref:\ refs/heads/* ]]; then
+                    git_branch="${head#*/*/}"
+		elif [[ $head != '' ]]; then
+                    git_branch='(detached)'
+		else
+                    git_branch='(unknown)'
+		fi
+		git_repo=$(basename $(realpath "$dir"))
+		promptF_scm_status="[${git_repo}] _${git_branch}_"
+		return 0
+            fi
+	done
+        dir="../$dir"
+    done
+    promptF_scm_status=""
+    return 1
+}
+export -f promptF_scm_check_GIT
+
+echo "Setup scm (cvs/svn/git) extended prompt"
+promptF_setup
+
+# ??? pas de completion pour CVS sur Debian ???
+. /etc/bash_completion.d/git
+. /etc/bash_completion.d/subversion
