@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Sat Mar 13 12:06:34 2010
+# Modified: Sun Mar 28 16:17:25 2010
 #
 # Environnement bash pour la gestion de conf.
 #
@@ -10,6 +10,13 @@
 # Options
 scm_env_o_git=1 # enable git
 scm_env_o_svn=0 # disable svn
+#
+scm_env_e_realpath=0
+
+# Requirements
+if $(which realpath 2>&1 >/dev/null) ; then
+    scm_env_e_realpath=1
+fi
 
     # uid=>couleur
     # user@host {status}
@@ -117,27 +124,57 @@ export -f promptF_scm_check_SVN
 
 function promptF_scm_check_GIT {
     local dir=$PWD head gt
-    until [ "$dir" -ef / ]; do
-	for gt in "$GIT_DIR" "$dir/.git" ; do
-            if [ -f "$gt/HEAD" ]; then
-		head=$(< "$gt/HEAD")
-		if [[ $head == ref:\ refs/heads/* ]]; then
-                    git_branch="${head#*/*/}"
-		elif [[ $head != '' ]]; then
-                    git_branch='(detached)'
-		else
-                    git_branch='(unknown)'
+    local head=
+    local git_branch=
+    local git_repo=
+    #
+    if [ ! -z "$GIT_DIR" ] ; then
+	if [ -d "$GIT_DIR" ] ; then
+	    git_repo=${GIT_DIR##*/}
+	else
+	    git_repo="**ERROR** dir $GIT_DIR does not exist"
+	fi
+    else
+	until [ "$dir" -ef / ]; do
+	    for gt in "$GIT_DIR" "$dir/.git" ; do
+		if [ -f "$gt/HEAD" ]; then
+		    head=$(< "$gt/HEAD")
+		    if [[ $head == ref:\ refs/heads/* ]]; then
+			git_branch="${head#*/*/}"
+		    elif [[ $head != '' ]]; then
+			git_branch='(detached)'
+		    else
+			git_branch='(unknown)'
+		    fi
+		    if [ $scm_env_e_realpath -eq 1 ] ; then
+			git_repo=$(basename $(realpath "$dir"))
+		    else
+			git_repo=${dir##*/}
+		    fi
 		fi
-		# ATTENTION: git_repo=$(basename $(realpath "$dir"))
-		git_repo=${dir##*/}
-		promptF_scm_status="[${git_repo}] _${git_branch}_"
-		return 0
-            fi
+	    done
+            dir="${dir}/.."
+# 	    if [ $scm_env_e_realpath -eq 1 ] ; then
+# 		dir=$(realpath "$dir")
+# 	    else
+#		# hack
+# 		in=$(\ls -id /)
+# 		indir=$(\ls -id "$dir")
+# 		if [ $in == $indir ] ; then
+# 		    dir=/
+# 		fi
+# 	    fi
 	done
-        dir="../$dir"
-    done
-    promptF_scm_status=""
-    return 1
+    fi
+    
+    # résultat final
+    if [ ! -z "$git_repo" ] ; then
+	promptF_scm_status="[${git_repo}] _${git_branch}_"
+	return 0
+    else
+	promptF_scm_status=""
+	return 1
+    fi
 }
 export -f promptF_scm_check_GIT
 
