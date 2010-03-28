@@ -116,7 +116,7 @@ function promptF_scm_check_SVN {
 export -f promptF_scm_check_SVN
 
 function promptF_scm_check_GIT {
-    local dir=. head gt
+    local dir=$PWD head gt
     until [ "$dir" -ef / ]; do
 	for gt in "$GIT_DIR" "$dir/.git" ; do
             if [ -f "$gt/HEAD" ]; then
