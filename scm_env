@@ -124,7 +124,8 @@ function promptF_scm_check_GIT {
 		else
                     git_branch='(unknown)'
 		fi
-		git_repo=$(basename $(realpath "$dir"))
+		# ATTENTION: git_repo=$(basename $(realpath "$dir"))
+		git_repo=${dir##*/}
 		promptF_scm_status="[${git_repo}] _${git_branch}_"
 		return 0
             fi
