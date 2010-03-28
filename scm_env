@@ -7,6 +7,10 @@
 # Environnement bash pour la gestion de conf.
 #
 
+# Options
+scm_env_o_git=1 # enable git
+scm_env_o_svn=0 # disable svn
+
     # uid=>couleur
     # user@host {status}
     # scm=>
@@ -141,5 +145,20 @@ echo "Setup scm (cvs/svn/git) extended prompt"
 promptF_setup
 
 # ??? pas de completion pour CVS sur Debian ???
-. /etc/bash_completion.d/git
-. /etc/bash_completion.d/subversion
+
+# Completion Bash pour Git
+if [ $scm_env_o_git -eq 1 ] ; then
+	# sur Debian
+	[ -f /etc/bash_completion.d/git ] && \
+		. /etc/bash_completion.d/git
+	# sur Mac OSX (avec Mac Ports)
+	[ -f /opt/local/share/doc/git-core/contrib/completion/git-completion.bash ] && \
+		. /opt/local/share/doc/git-core/contrib/completion/git-completion.bash
+fi
+
+# Completion Bash pour Subversion
+if [ $scm_env_o_svn -eq 1 ] ; then
+	# sur Debian
+	[ -f /etc/bash_completion.d/subversion ] && . /etc/bash_completion.d/subversion
+	# sur Mac OSX (?)
+fi
