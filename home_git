@@ -54,7 +54,11 @@ export -f home_git_git
 #
 #
 home_git_load_conf() {
-    . "$HOME/.home_git"
+    if [ -f "$HOME/.home_git" ] ; then
+	. "$HOME/.home_git"
+    else
+	ifV echo "No configuration file found (~/.home_git)."
+    fi
 }
 export -f home_git_load_conf
 
@@ -113,6 +117,10 @@ export -f home_git_list_peers
 
 home_git_sync_peer() { #1: peer remote name
     p=$1
+    if [ -z "$p" ] ; then
+	echo "Required argument: peer name"
+	return 1
+    fi
     echo "synching peer: $p"
     home_git_git fetch $p
     home_git_git diff --stat $p
