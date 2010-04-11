@@ -2,12 +2,13 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Sun Mar 28 14:49:55 2010
+# Modified: Mon Apr 12 01:34:18 2010
 # 
-# Gèrer certains fichiers de la $HOME avec Git.
+# Gérer certains fichiers de la $HOME avec Git.
+
+set -a
 
 # =======================================
-me=${0##*/}
 oV=0
 oD=0
 sS=0
@@ -21,6 +22,8 @@ DISABLED=0
 alias ifV='[ $oV -eq $ENABLED ] && '
 # condition "if debug"
 alias ifD='[ $oD -eq $ENABLED ] && '
+#
+shopt -s expand_aliases
 # =======================================
 
 o_scm=$FALSE
@@ -43,9 +46,8 @@ HOME_GIT_WORK_TREE="$HOME"
 # Wrapper pour git dans notre environnement "home utilisateur"
 #
 home_git_git() {
-    #PAGER= LESS= 
     # gestion de less avec git : à travailler !!!
-    PAGER='' git --git-dir="$HOME_GIT_DIR" \
+    PAGER= git --git-dir="$HOME_GIT_DIR" \
 	--work-tree="$HOME_GIT_WORK_TREE" "$@" 
 }
 export -f home_git_git
@@ -66,17 +68,15 @@ export -f home_git_load_conf
 # Liste les fichiers gérés
 #
 home_git_list_managed() {
-    home_git_git ls-files
+    home_git_git ls-files --full-name -t
 }
 export -f home_git_list_managed
 
 #
-# Ajouter un fichier
+# TODO: Ajouter un fichier
 #
 home_git_add() {
-    cd
     home_git_git add -- $@
-    cd - >/dev/null
 }
 export -f home_git_add
 
@@ -146,3 +146,5 @@ alias HGSF=home_git_status
 # Le fichier .xsession ...
 # Les scripts utiles dans bin/
 # Ma photo !
+
+unset u
