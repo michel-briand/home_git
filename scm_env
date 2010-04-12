@@ -12,11 +12,18 @@ set -a
 # Options
 scm_env_o_git=1 # enable git
 scm_env_o_svn=0 # disable svn
-scm_env_e_readlink=1 # use readlink ?
+scm_env_e_readlink=0 # use readlink ?
 scm_env_e_realpath=0 # use realpath ?
 
 # Requirements
-if $(which realpath 2>&1 >/dev/null) ; then
+case $(uname -s) in
+    # require GNU coreutils (with ports / fink)
+    Darwin) READLINK=greadlink ;;
+    *) READLINK=readlink ;;
+esac
+if $(which $READLINK 2>&1 >/dev/null) ; then
+    scm_env_e_readlink=1
+elif $(which realpath 2>&1 >/dev/null) ; then
     scm_env_e_realpath=1
 fi
 
@@ -128,7 +135,7 @@ function __absolute_dir {
     if [ $scm_env_e_realpath -eq 1 ] ; then
 	realpath "$1"
     elif [ $scm_env_e_readlink -eq 1 ] ; then
-	readlink -f "$1"
+	$READLINK -f "$1"
     else
 	echo "$1"
     fi
