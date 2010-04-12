@@ -2,16 +2,18 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Sun Mar 28 16:17:25 2010
+# Modified: Mon Apr 12 02:09:09 2010
 #
 # Environnement bash pour la gestion de conf.
 #
 
+set -a
+
 # Options
 scm_env_o_git=1 # enable git
 scm_env_o_svn=0 # disable svn
-#
-scm_env_e_realpath=0
+scm_env_e_readlink=1 # use readlink ?
+scm_env_e_realpath=0 # use realpath ?
 
 # Requirements
 if $(which realpath 2>&1 >/dev/null) ; then
@@ -25,14 +27,14 @@ fi
     # non     dir
     # $
 
-export promptF_COLORS=( "\[\033[0;32m\]" "\[\033[0;36m\]" "\[\033[0;35m\]" )
-export promptF_NO_COLOR="\[\033[0m\]"
-export promptF_RED="\[\033[0;31m\]"
-export promptF_BOLD="\[\033[1m\]"
-export promptF_defcolor=${promptF_COLORS[2]}
-export promptF_status="uninitialized"
-export promptF_scm_status=""
-export promptF_enable_titlebar=1
+promptF_COLORS=( "\[\033[0;32m\]" "\[\033[0;36m\]" "\[\033[0;35m\]" )
+promptF_NO_COLOR="\[\033[0m\]"
+promptF_RED="\[\033[0;31m\]"
+promptF_BOLD="\[\033[1m\]"
+promptF_defcolor=${promptF_COLORS[2]}
+promptF_status="uninitialized"
+promptF_scm_status=""
+promptF_enable_titlebar=1
 
 function promptF_color() {
     case $USER in
@@ -41,7 +43,7 @@ function promptF_color() {
 	*) return 3;;
     esac
 }
-export -f promptF_color
+# export -f promptF_color
 
 function promptF_setup() {
     local c
@@ -58,7 +60,7 @@ function promptF_setup() {
     esac
     export PROMPT_COMMAND="promptF_update"
 }
-export -f promptF_setup
+# export -f promptF_setup
 
 function promptF_update() {
     local titlebar
@@ -76,7 +78,7 @@ function promptF_update() {
     fi
     export PS1="${promptF_defcolor}\u@\h${promptF_status} \w \$ $promptF_NO_COLOR"
 }
-export -f promptF_update
+# export -f promptF_update
 
 # fonction désactivée: trouver mieux!
 function promptF_curdir() {
@@ -88,7 +90,7 @@ function promptF_curdir() {
     fi 
     promptF_PWD=$cwd
 }
-export -f promptF_curdir
+# export -f promptF_curdir
 
 # à étendre en fonction des différents scm
 function promptF_under_scm() {
@@ -102,7 +104,7 @@ function promptF_under_scm() {
 	return 1
     fi
 }
-export -f promptF_under_scm
+# export -f promptF_under_scm
 
 function promptF_scm_check_CVS {
     if [ -d "CVS" ] ; then
@@ -111,7 +113,7 @@ function promptF_scm_check_CVS {
     fi
     return 1
 }
-export -f promptF_scm_check_CVS
+# export -f promptF_scm_check_CVS
 
 function promptF_scm_check_SVN {
     if [ -d ".svn" ] ; then
@@ -120,55 +122,53 @@ function promptF_scm_check_SVN {
     fi
     return 1
 }
-export -f promptF_scm_check_SVN
+# export -f promptF_scm_check_SVN
+
+function __absolute_dir {
+    if [ $scm_env_e_realpath -eq 1 ] ; then
+	realpath "$1"
+    elif [ $scm_env_e_readlink -eq 1 ] ; then
+	readlink -f "$1"
+    else
+	echo "$1"
+    fi
+}
 
 function promptF_scm_check_GIT {
-    local dir=$PWD head gt
+    local dir=$PWD
     local head=
     local git_branch=
     local git_repo=
-    #
+    # d'abord l'environnement
     if [ ! -z "$GIT_DIR" ] ; then
 	if [ -d "$GIT_DIR" ] ; then
-	    git_repo=${GIT_DIR##*/}
+	    dir=$(__absolute_dir "$GIT_DIR")
+	    git_repo=${dir##*/}
 	else
-	    git_repo="**ERROR** dir $GIT_DIR does not exist"
+	    git_repo="**ERROR** GIT_DIR=$GIT_DIR does not exist"
 	fi
     else
 	until [ "$dir" -ef / ]; do
-	    for gt in "$GIT_DIR" "$dir/.git" ; do
-		if [ -f "$gt/HEAD" ]; then
-		    head=$(< "$gt/HEAD")
-		    if [[ $head == ref:\ refs/heads/* ]]; then
-			git_branch="${head#*/*/}"
-		    elif [[ $head != '' ]]; then
-			git_branch='(detached)'
-		    else
-			git_branch='(unknown)'
-		    fi
-		    if [ $scm_env_e_realpath -eq 1 ] ; then
-			git_repo=$(basename $(realpath "$dir"))
-		    else
-			git_repo=${dir##*/}
-		    fi
-		fi
-	    done
-            dir="${dir}/.."
-# 	    if [ $scm_env_e_realpath -eq 1 ] ; then
-# 		dir=$(realpath "$dir")
-# 	    else
-#		# hack
-# 		in=$(\ls -id /)
-# 		indir=$(\ls -id "$dir")
-# 		if [ $in == $indir ] ; then
-# 		    dir=/
-# 		fi
-# 	    fi
+	    if [ -d "$dir/.git" ]; then
+		dir=$(__absolute_dir "$dir")
+		git_repo=${dir##*/}
+		break
+	    fi
+            dir=$(__absolute_dir "${dir}/..")
 	done
     fi
-    
     # résultat final
     if [ ! -z "$git_repo" ] ; then
+	if [ -f "$dir/.git/HEAD" ]; then
+	    head=$(< "$dir/.git/HEAD")
+	    if [[ $head == ref:\ refs/heads/* ]]; then
+		git_branch="${head#*/*/}"
+	    elif [[ $head != '' ]]; then
+		git_branch='(detached)'
+	    else
+		git_branch='(unknown)'
+	    fi
+	fi
 	promptF_scm_status="[${git_repo}] _${git_branch}_"
 	return 0
     else
@@ -176,7 +176,7 @@ function promptF_scm_check_GIT {
 	return 1
     fi
 }
-export -f promptF_scm_check_GIT
+# export -f promptF_scm_check_GIT
 
 echo "Setup scm (cvs/svn/git) extended prompt"
 promptF_setup
