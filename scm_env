@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Mon Apr 12 02:09:09 2010
+# Modified: Wed Apr 28 02:16:34 2010
 #
 # Environnement bash pour la gestion de conf.
 #
@@ -13,18 +13,17 @@ set -a
 scm_env_o_git=1 # enable git
 scm_env_o_svn=0 # disable svn
 scm_env_e_readlink=0 # use readlink ?
-scm_env_e_realpath=0 # use realpath ?
+scm_env_e_realpath=0 # use realpath ? (priority)
 
 # Requirements
-case $(uname -s) in
-    # require GNU coreutils (with ports / fink)
-    Darwin) READLINK=greadlink ;;
-    *) READLINK=readlink ;;
-esac
-if $(which $READLINK 2>&1 >/dev/null) ; then
-    scm_env_e_readlink=1
-elif $(which realpath 2>&1 >/dev/null) ; then
-    scm_env_e_realpath=1
+REALPATH=$(which realpath) && scm_env_e_realpath=1
+if [ $scm_env_e_realpath -ne 1 ] ; then
+	case $(uname -s) in
+	    # require GNU coreutils (with ports / fink)
+		# if "which" succeed then we know that we can use "readlink"
+	    Darwin) READLINK=$(which greadlink) && scm_env_e_readlink=1 ;;
+	    *) READLINK=$(which readlink) && scm_env_e_readlink=1 ;;
+	esac
 fi
 
     # uid=>couleur
@@ -133,7 +132,7 @@ function promptF_scm_check_SVN {
 
 function __absolute_dir {
     if [ $scm_env_e_realpath -eq 1 ] ; then
-	realpath "$1"
+	$REALPATH "$1"
     elif [ $scm_env_e_readlink -eq 1 ] ; then
 	$READLINK -f "$1"
     else
@@ -206,3 +205,6 @@ if [ $scm_env_o_svn -eq 1 ] ; then
 	[ -f /etc/bash_completion.d/subversion ] && . /etc/bash_completion.d/subversion
 	# sur Mac OSX (?)
 fi
+
+set +a
+
