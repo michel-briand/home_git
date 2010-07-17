@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Wed Apr 28 02:16:34 2010
+# Modified: Sat Jul 17 11:21:48 2010
 #
 # Environnement bash pour la gestion de conf.
 #
@@ -140,47 +140,82 @@ function __absolute_dir {
     fi
 }
 
-function promptF_scm_check_GIT {
-    local dir=$PWD
-    local head=
-    local git_branch=
-    local git_repo=
-    # d'abord l'environnement
+# arg: #1: starting path for search
+function _scm_find_git_dir {
+    local dir=${1:-$PWD}
+    local r=0
+
+    # check environment first
     if [ ! -z "$GIT_DIR" ] ; then
 	if [ -d "$GIT_DIR" ] ; then
 	    dir=$(__absolute_dir "$GIT_DIR")
-	    git_repo=${dir##*/}
 	else
-	    git_repo="**ERROR** GIT_DIR=$GIT_DIR does not exist"
+	    # error: $GIT_DIR points to non-existing directory
+	    dir=""
+	    r=1
 	fi
     else
 	until [ "$dir" -ef / ]; do
 	    if [ -d "$dir/.git" ]; then
 		dir=$(__absolute_dir "$dir")
-		git_repo=${dir##*/}
 		break
 	    fi
             dir=$(__absolute_dir "${dir}/..")
 	done
     fi
-    # résultat final
-    if [ ! -z "$git_repo" ] ; then
-	if [ -f "$dir/.git/HEAD" ]; then
-	    head=$(< "$dir/.git/HEAD")
-	    if [[ $head == ref:\ refs/heads/* ]]; then
-		git_branch="${head#*/*/}"
-	    elif [[ $head != '' ]]; then
-		git_branch='(detached)'
-	    else
-		git_branch='(unknown)'
-	    fi
+    echo "$dir"
+    return $r
+}
+export -f _scm_find_git_dir
+
+# argument requis: chemin de la repository
+function _scm_find_git_branch {
+    local dir=
+    local git_branch=
+    local head=
+
+    dir=${1:?"_scm_find_git_branch() requires 1 argument: repository path"}
+    if [ -f "$dir/.git/HEAD" ]; then
+	head=$(< "$dir/.git/HEAD")
+	if [[ $head == ref:\ refs/heads/* ]]; then
+	    git_branch="${head#*/*/}"
+	elif [[ $head != '' ]]; then
+	    git_branch='(detached)'
+	else
+	    git_branch='(unknown)'
 	fi
-	promptF_scm_status="[${git_repo}] _${git_branch}_"
+	echo $git_branch
 	return 0
-    else
+    fi
+    echo ""
+    return 1
+}
+export -f _scm_find_git_branch
+
+function promptF_scm_check_GIT {
+    local git_branch=
+    local git_repo=
+    local dir=$(_scm_find_git_dir)
+
+    if [ $? -ne 0 ] ; then
 	promptF_scm_status=""
 	return 1
     fi
+    git_repo=${dir##*/}
+    # on peut encore avoir une chaine vide ici
+    if [ -z "$git_repo" ] ; then
+	promptF_scm_status=""
+	return 1
+    fi
+
+    # il faut encore récupérer la branche courante
+    git_branch=$(_scm_find_git_branch "$dir")
+    if [ $? -ne 0 ] ; then
+	promptF_scm_status=""
+	return 1
+    fi
+    promptF_scm_status="[${git_repo}] _${git_branch}_"
+    return 0
 }
 # export -f promptF_scm_check_GIT
 
