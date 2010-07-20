@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Mon Apr 12 01:34:18 2010
+# Modified: Tue Jul 20 11:57:33 2010
 # 
 # Gérer certains fichiers de la $HOME avec Git.
 
@@ -26,18 +26,46 @@ alias ifD='[ $oD -eq $ENABLED ] && '
 shopt -s expand_aliases
 # =======================================
 
-o_scm=$FALSE
+if [ -z "$o_scm" ] ; then
+    o_scm=$DISABLED
+fi
 
 # SUPPPORT scm_env
-if $(which scm_env 2>&1 >/dev/null) ; then
-    # le support de scm_env est activé: le but est
-    # de modifier le PS1 en fonction du statut et
-    # des actions...
-    o_scm=$TRUE
-fi
+case $o_scm in
+    $ENABLED)
+	if $(which scm_env 2>&1 >/dev/null) ; then
+	    # le support de scm_env est activé: le but est
+	    # de modifier le PS1 en fonction du statut et
+	    # des actions...
+	    . scm_env
+	fi
+	;;
+    *) ;;
+esac
 
 # REQUIRE POSIX TOOLS / GNU coreutils
 u=$(id -un)
+
+# DISPLAY FUNCTION
+home_git_em_color="\033[0;31m"
+home_git_df_color="\033[0m"
+export home_git_em_color home_git_df_color
+
+echo_em() {
+    # TODO: trouver un meilleur moyen de détecter
+    # un terminal capable d'afficher des couleurs.
+    # En tout cas on veut qu'à travers un pipe il
+    # n'y ait pas de couleur.
+    case "$TERM" in
+	linux|xterm)
+	    echo -e "${home_git_em_color}$*${home_git_df_color}"
+	    ;;
+	*)
+	    echo "$*"
+	    ;;
+    esac
+}
+export -f echo_em
 
 HOME_GIT_DIR="$HOME/.git_home_${u}"
 HOME_GIT_WORK_TREE="$HOME"
@@ -53,7 +81,9 @@ home_git_git() {
 export -f home_git_git
 
 #
-#
+# Pour l'instant la configuration contient une variable
+# nommée 'home_git_peers' qui défini l'embryon du réseau
+# de pairs.
 #
 home_git_load_conf() {
     if [ -f "$HOME/.home_git" ] ; then
@@ -80,33 +110,45 @@ home_git_add() {
 }
 export -f home_git_add
 
+#
+# simple statut: list le delta entre l'état actuel
+# et le dépôt git (index)
+#
 home_git_status() {
+    home_git_git diff --stat
+}
+export -f home_git_status
+
+#
+# Liste les fichiers par genre: 'cached' (fichiers à jour),
+# 'removed', 'modified', 'created'. 
+# Ici on ignore les 'others' car les fichiers non gérés 
+# ne doivent pas géner la sortie.
+#
+home_git_status_ex() {
     # récupère le statut
     cd "$HOME_GIT_WORK_TREE"
     sCached=$(home_git_git ls-files --cached)
     sDeleted=$(home_git_git ls-files --deleted)
     sModified=$(home_git_git ls-files --modified)
-    # pas de others ici car on se moque des fichiers non "managed"
-    #sOthers=$(home_git_git ls-files --others)
     cd - > /dev/null
     # affiche le statut
-    ifV echo "Current directory status:"
-    echo "    Up-to-date"
-    echo "$sCached" # <-- if variable is not quoted
-    echo "    Removed"  #     we lose trailing newlines
-    echo "$sDeleted"
-    echo "    Modified"
-    echo "$sModified"
-    echo "    Created"
-    #echo "$sOthers"
+    ifV echo_em "= HG current directory status ="
+    if [ ! -z "$sCached" ] ; then
+	echo_em "== Up-to-date =="
+	echo "$sCached" # <-- if variable is not quoted
+    fi
+    if [ ! -z "$sDeleted" ] ; then
+	echo_em "== Removed =="  #     we lose trailing newlines
+	echo "$sDeleted"
+    fi
+    if [ ! -z "$sModified" ] ; then
+	echo_em "== Modified =="
+	echo "$sModified"
+    fi
     return 0
 }
-export home_git_status
-
-home_git_status2() {
-    home_git_git diff --stat
-}
-export -f home_git_status2
+export home_git_status_ex
 
 home_git_list_peers() {
     # fichier de configuration
@@ -116,12 +158,12 @@ home_git_list_peers() {
 export -f home_git_list_peers
 
 home_git_sync_peer() { #1: peer remote name
-    p=$1
+    local p=$1
     if [ -z "$p" ] ; then
 	echo "Required argument: peer name"
 	return 1
     fi
-    echo "synching peer: $p"
+    ifV echo_em "HG synching peer $p..."
     home_git_git fetch $p
     home_git_git diff --stat $p
 }
@@ -135,8 +177,9 @@ home_git_sync_all_peers() {
 export -f home_git_sync_all_peers
 
 alias HG=home_git_git
-alias HGS=home_git_status2
-alias HGSF=home_git_status
+alias HGL=home_git_list_managed
+alias HGS=home_git_status
+alias HGSF=home_git_status_ex
 
 # TODO:
 # branches: une par machine (sur eana j'ai par exemple

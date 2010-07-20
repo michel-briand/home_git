@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+#
+
+if [ -f "./home_git" ] ; then
+    HOME_GIT="$PWD/home_git"
+elif [ -f "$HOME/bin/home_git" ] ; then
+    HOME_GIT="$HOME/bin/home_git"
+else
+    echo "HG not found. Exit"
+    exit 1
+fi
+
+export HOME_GIT
+
+. ~/.bash_profile
+
+. $HOME_GIT
+
+echo "Welcome to HG shell"
+
+help() {
+echo
+echo "Main commands are:"
+echo
+echo "HGS: status of managed files"
+echo "HGSF: another form of status"
+}
+
+help
+
