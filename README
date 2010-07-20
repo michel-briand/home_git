@@ -26,11 +26,33 @@ données. Un dépôt est créé dans un chemin conventionnel.
 
 Nécessite un script indépendant du dépôt.
 
-Transfert: copie (rsync/tar). Ou git clone.
+*** Transfert: copie (rsync/tar). Ou git clone.
 
-Installation:
+*** Installation
+
+**** Installation de l'outil
+
+- copier le dépôt sur la machine cible
+  
+  création d'une archive autonome
+  transfert de l'archive
+
+- créer un lien dans le PATH vers home_git (et éventuellement scm_env)
+
+  Sur la machine cible, on a extrait 
+  mkdir -p $HOME/bin
+  cd $HOME/bin
+  ln -s $HOME_GIT/home_git home_git
+
+- charger home_git
+
+- extraire le dépôt localement
+
 - créer une branche pour la machine et l'utilisateur local
+
 - référencer cette nouvelle instance dans le réseau des pairs
+
+**** Installation des données
 
 Cf notre réfléxion sur le réseau de pairs dans les autres projets.
 
