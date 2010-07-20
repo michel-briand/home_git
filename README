@@ -1,0 +1,45 @@
+# -*-mode:org;coding:iso-8859-15;-*-
+
+* HOME GIT
+
+home_git est un petit hack sympa pour gérer le répertoire home en
+configuration.
+
+** Principe
+
+L'utilisateur sélectionne des fichiers à gérer en configuration.
+Le script s'occupe de les gérer.
+
+** Interface
+
+*** Activer l'environnement 
+
+Charger le fichier d'environnement home_git, ou démarrer un terminal
+spécialisé avec celui-ci.
+
+** Fonctionnement
+
+Le logiciel git est utilisé pour manipuler et pour sauvegarder les
+données. Un dépôt est créé dans un chemin conventionnel.
+
+** Déploiement
+
+Nécessite un script indépendant du dépôt.
+
+Transfert: copie (rsync/tar). Ou git clone.
+
+Installation:
+- créer une branche pour la machine et l'utilisateur local
+- référencer cette nouvelle instance dans le réseau des pairs
+
+Cf notre réfléxion sur le réseau de pairs dans les autres projets.
+
+** Sauvegarde
+
+Par construction le dépôt est répliqué chez tous les pairs, et
+les fichiers de données sont disponibles dans toutes les homes.
+
+Cependant on peut vouloir sauvegarder un dépôt sur un support
+de stockage pérenne.
+
+Il suffit de recopier le dépôt (tar/rsync).
