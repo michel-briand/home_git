@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Sat Jul 17 11:21:48 2010
+# Modified: Wed Jul 21 18:47:02 2010
 #
 # Environnement bash pour la gestion de conf.
 #
@@ -16,15 +16,67 @@ scm_env_e_readlink=0 # use readlink ?
 scm_env_e_realpath=0 # use realpath ? (priority)
 
 # Requirements
-REALPATH=$(which realpath) && scm_env_e_realpath=1
-if [ $scm_env_e_realpath -ne 1 ] ; then
-	case $(uname -s) in
-	    # require GNU coreutils (with ports / fink)
-		# if "which" succeed then we know that we can use "readlink"
-	    Darwin) READLINK=$(which greadlink) && scm_env_e_readlink=1 ;;
-	    *) READLINK=$(which readlink) && scm_env_e_readlink=1 ;;
-	esac
-fi
+
+# require fonction will check for a command availability
+# in PATH and return its status either basically ($?) or
+# in a status variable (if given)
+
+require() { #1: command #2(opt): status variable (O=ok,1=ko)
+    local cmd="${1?-'require(): argument required: command name'}"
+    local var="$2"
+    local status=1
+
+    # check for command with 'which'
+    local tmp=$(which "$1")
+    if [ $? -eq 0 ] ; then
+	status=0
+    else
+	# in case this does not work, check with 'type' (HP, Sun)
+	tmp=$(type "$1")
+	if [ $? -eq 0 ] ; then
+	    status=0
+	fi
+    fi
+
+    # check for command executable bit
+    if [ $status -eq 0 ] ; then
+	if [ ! -x "$tmp" ] ; then
+	    status=1
+	fi
+    fi
+
+    # return status basically or through a variable
+    if [ -z "$var" ] ; then
+	return $status
+    else
+	eval "$var=$status"
+	return $status
+    fi
+    
+}
+export -f require
+
+# Maintenant, avec la fonction require(), on peut écrire la ligne
+#   REALPATH=$(which realpath) && scm_env_e_realpath=1
+# comme ceci:
+require realpath scm_env_e_realpath
+
+# De la même manière on peut ré-écrire les lignes suivantes
+#   if [ $scm_env_e_realpath -ne 1 ] ; then
+#   	case $(uname -s) in
+#	    # require GNU coreutils (with ports / fink)
+#		# if "which" succeed then we know that we can use "readlink"
+#	    Darwin) READLINK=$(which greadlink) && scm_env_e_readlink=1 ;;
+#	    *) READLINK=$(which readlink) && scm_env_e_readlink=1 ;;
+#	esac
+#   fi
+# comme ceci:
+scm_platform=$(uname -s)
+case $scm_platform in
+    Darwin) require greadlink scm_env_e_readlink ;;
+    Linux) require readlink scm_env_e_readlink ;;
+    *) echo "Platform not supported: $scm_platform"; return 1 ;;
+esac
 
     # uid=>couleur
     # user@host {status}
