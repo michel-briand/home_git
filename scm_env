@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Wed Jul 21 18:47:02 2010
+# Modified: Wed Jul 21 18:49:51 2010
 #
 # Environnement bash pour la gestion de conf.
 #
@@ -52,7 +52,6 @@ require() { #1: command #2(opt): status variable (O=ok,1=ko)
 	eval "$var=$status"
 	return $status
     fi
-    
 }
 export -f require
 
