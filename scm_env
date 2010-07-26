@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Mon Jul 26 16:32:01 2010
+# Modified: Mon Jul 26 19:18:40 2010
 #
 # Environnement bash pour la gestion de configuration.
 # Bash environment for configuration management.
@@ -180,26 +180,18 @@ export -f scm_prompt_setup
 
 scm_prompt_update()
 {
-    local titlebar=
-    local short_title=
-    local long_title=
     scm_curdir
     if scm_under_scm ; then
-	scm_prompt_status=" ${scm_BOLD}$scm_scm_status${scm_defcolor}"
+	scm_prompt_status="${scm_BOLD}$scm_scm_status${scm_defcolor}"
     else
 	scm_prompt_status=""
     fi
     if [ $scm_env_e_titlebar -eq $ENABLED ] ; then
-	short_title="${scm_scm_status}"
-	long_title="${USER}@${HOSTNAME%%.*} $scm_cwd $scm_scm_status"
-        titlebar="\033]0;$short_title\007\033]2;$long_title\007\]"
 	# since we are in PROMPT_COMMAND callback, 
 	# let's write directly to stdout
-###	echo -ne $titlebar
+        echo -ne "\033]0;\007\033]2;${USER}@${HOSTNAME%%.*} $scm_cwd $scm_scm_status\007"
     fi
-###    export PS1="${scm_defcolor}\u@\h${scm_prompt_status} $scm_cwd \$ $scm_NO_COLOR"
-    PS1="${titlebar}${scm_defcolor}\u@\h${scm_prompt_status} $scm_cwd \\$ $scm_NO_COLOR"
-    export PS1
+    export PS1="${scm_defcolor}\u@\h ${scm_prompt_status} $scm_cwd \\$ $scm_NO_COLOR"
 }
 export -f scm_prompt_update
 
