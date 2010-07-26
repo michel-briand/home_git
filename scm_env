@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Mon Jul 26 19:18:40 2010
+# Modified: Mon Jul 26 19:55:49 2010
 #
 # Environnement bash pour la gestion de configuration.
 # Bash environment for configuration management.
@@ -264,7 +264,7 @@ export -f scm_absdir
 scm_find_git_dir() #1: starting path for search
 {
     local dir=${1:-$PWD}
-    local r=0
+    local r=$TRUE
 
     echoD "debug _scm_find_git_dir: starting at $dir"
 
@@ -275,7 +275,7 @@ scm_find_git_dir() #1: starting path for search
 	else
 	    # error: $GIT_DIR points to non-existing directory
 	    dir=""
-	    r=1
+	    r=$FALSE
 	fi
     else
 	echoD "sfgd1: $dir"
