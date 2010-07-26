@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Tue Jul 20 11:57:33 2010
+# Modified: Mon Jul 26 19:21:58 2010
 # 
 # Gérer certains fichiers de la $HOME avec Git.
 
@@ -74,6 +74,12 @@ HOME_GIT_WORK_TREE="$HOME"
 # Wrapper pour git dans notre environnement "home utilisateur"
 #
 home_git_git() {
+    [ -z "$*" ] && {
+	echo "Ceci est un alias pour git avec pour environnement:"
+	echo "GIT_DIR=$HOME_GIT_DIR"
+	echo "GIT_WORK_TREE=$HOME_GIT_WORK_TREE"
+	return 0
+    }
     # gestion de less avec git : à travailler !!!
     PAGER= git --git-dir="$HOME_GIT_DIR" \
 	--work-tree="$HOME_GIT_WORK_TREE" "$@" 
