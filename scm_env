@@ -2,18 +2,57 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Fri Jul 23 09:14:07 2010
+# Modified: Mon Jul 26 16:32:01 2010
 #
-# Environnement bash pour la gestion de conf.
+# Environnement bash pour la gestion de configuration.
+# Bash environment for configuration management.
+#
+# Copyright (C) 2009, 2010 Michel Briand.
+#
+# This file is released under the GNU GPL license.
 #
 
-set -a
+# Booleans
+
+TRUE=0
+FALSE=1
+ENABLED=1
+DISABLED=0
+
+export TRUE FALSE ENABLED DISABLED
+
+# NB: Christophe, Éric, ... peut être pensez-vous que je cherche
+#     des poils sur les oeufs avec ces booléens... Si vous avez
+#     envie de simplifier tout ça, n'hésitez pas à me proposer
+#     quelque chose...
 
 # Options
-scm_env_o_git=1 # enable git
-scm_env_o_svn=0 # disable svn
-scm_env_e_readlink=0 # use readlink ?
-scm_env_e_realpath=0 # use realpath ? (priority)
+if [ -z "$scm_env_o_debug" ] ; then
+    # if already defined in environment, do nothing
+    scm_env_o_debug=$DISABLED # disable debug by default
+fi
+scm_env_o_git=$ENABLED # enable git by default
+scm_env_o_svn=$DISABLED # disable svn by default
+scm_env_e_readlink=$DISABLED # use readlink ? will 'require' it
+scm_env_e_realpath=$DISABLED # use realpath ? will 'require' it
+scm_env_e_titlebar=$DISABLED # we check for xterm in setup
+
+# Debug function
+
+shopt -s expand_aliases
+alias ifD='[ $scm_env_o_debug -eq $ENABLED ] && '
+
+# it's really important to have an echo-like function that
+# do not alter stdout because many functions are expecting
+# a return value through stdout
+
+echoD()
+{
+    ifD echo "$*" >&2
+}
+export -f echoD
+
+ifD set -x
 
 # Requirements
 
@@ -21,30 +60,31 @@ scm_env_e_realpath=0 # use realpath ? (priority)
 # in PATH and return its status either basically ($?) or
 # in a status variable (if given)
 
-require() { #1: command #2(opt): status variable (O=ok,1=ko)
-
+require() #1: command #2(opt): status variable (ENABLED/DISABLED)
+{
     local tmp=
     local cmd="${1?-'require(): argument required: command name'}"
     local var_cmd="$2"
     local var="$3"
-    local status=1
+    local status=$DISABLED
 
     # check for command with 'which'
     tmp=$(which "$1")
     if [ $? -eq 0 ] ; then
-	status=0
+	status=$ENABLED
     else
 	# in case this does not work, check with 'type' (HP, Sun)
-	tmp=$(type "$1")
+	tmp=$(type -p "$1")
 	if [ $? -eq 0 ] ; then
-	    status=0
+	    status=$ENABLED
 	fi
     fi
 
     # check for command executable bit
-    if [ $status -eq 0 ] ; then
+    if [ $status -eq $ENABLED ] ; then
 	if [ ! -x "$tmp" ] ; then
-	    status=1
+	    echoD "require: command was found but is not executable: $cmd"
+	    status=$DISABLED
 	fi
     fi
 
@@ -97,213 +137,241 @@ esac
     # non     dir
     # $
 
-promptF_COLORS=( "\[\033[0;32m\]" "\[\033[0;36m\]" "\[\033[0;35m\]" )
-promptF_NO_COLOR="\[\033[0m\]"
-promptF_RED="\[\033[0;31m\]"
-promptF_BOLD="\[\033[1m\]"
-promptF_defcolor=${promptF_COLORS[2]}
-promptF_status="uninitialized"
-promptF_scm_status=""
-promptF_enable_titlebar=1
+echoD "=== debug require ==="
+echoD "scm_env_e_realpath=$scm_env_e_realpath $REALPATH"
+echoD "scm_env_e_readlink=$scm_env_e_readlink $READLINK"
+echoD
 
-function promptF_color() {
+scm_COLORS=( "\[\033[0;32m\]" "\[\033[0;36m\]" "\[\033[0;35m\]" )
+scm_NO_COLOR="\[\033[0m\]"
+scm_RED="\[\033[0;31m\]"
+scm_BOLD="\[\033[1m\]"
+scm_defcolor=${scm_COLORS[2]}
+scm_prompt_status="uninitialized"
+scm_scm_status=
+scm_cwd=
+
+scm_user_color() 
+{
     case $USER in
 	root) return 1;;
 	michel) return 2;;
 	*) return 3;;
     esac
 }
-# export -f promptF_color
+export -f scm_user_color
 
-function promptF_setup() {
+scm_prompt_setup()
+{
     local c
-    promptF_color
+    scm_user_color
     c=$?
-    promptF_defcolor=${promptF_COLORS[$c]}
-    promptF_status="setup"
-
+    scm_defcolor=${scm_COLORS[$c]}
+    scm_prompt_status="setup"
     # only set titlebar in a capable terminal:
     case $TERM in
 	rxvt*|xterm*|gnome*|konsole*)
-	    promptF_enable_titlebar=0
+	    scm_env_e_titlebar=$ENABLED
             ;;
     esac
-    export PROMPT_COMMAND="promptF_update"
+    export PROMPT_COMMAND="scm_prompt_update"
 }
-# export -f promptF_setup
+export -f scm_prompt_setup
 
-function promptF_update() {
-    local titlebar
-#    promptF_curdir
-    if promptF_under_scm ; then
-	promptF_status=" ${promptF_BOLD}$promptF_scm_status${promptF_defcolor}"
+scm_prompt_update()
+{
+    local titlebar=
+    local short_title=
+    local long_title=
+    scm_curdir
+    if scm_under_scm ; then
+	scm_prompt_status=" ${scm_BOLD}$scm_scm_status${scm_defcolor}"
     else
-	promptF_status=""
+	scm_prompt_status=""
     fi
-    if [ $promptF_enable_titlebar -eq 0 ] ; then
-        titlebar="\033]2;${USER}@${HOSTNAME} $promptF_scm_status\007"
+    if [ $scm_env_e_titlebar -eq $ENABLED ] ; then
+	short_title="${scm_scm_status}"
+	long_title="${USER}@${HOSTNAME%%.*} $scm_cwd $scm_scm_status"
+        titlebar="\033]0;$short_title\007\033]2;$long_title\007\]"
 	# since we are in PROMPT_COMMAND callback, 
 	# let's write directly to stdout
-	echo -ne $titlebar
+###	echo -ne $titlebar
     fi
-    export PS1="${promptF_defcolor}\u@\h${promptF_status} \w \$ $promptF_NO_COLOR"
+###    export PS1="${scm_defcolor}\u@\h${scm_prompt_status} $scm_cwd \$ $scm_NO_COLOR"
+    PS1="${titlebar}${scm_defcolor}\u@\h${scm_prompt_status} $scm_cwd \\$ $scm_NO_COLOR"
+    export PS1
 }
-# export -f promptF_update
+export -f scm_prompt_update
 
-# fonction désactivée: trouver mieux!
-function promptF_curdir() {
+scm_curdir()
+{
     local cwd
-    if [ ${#PWD} -gt 20 ] ; then
-	cwd="...${PWD:10}"
+    if [ "$PWD" -ef "$HOME" ] ; then
+	cwd='~'
     else
-	cwd=${PWD}
-    fi 
-    promptF_PWD=$cwd
+	cwd=${PWD/$HOME\//'~'/}
+	if [ ${#cwd} -gt 20 ] ; then
+	    cwd="...${cwd:10}"
+	fi
+    fi
+    scm_cwd=$cwd
 }
-# export -f promptF_curdir
+export -f scm_curdir
 
-# à étendre en fonction des différents scm
-function promptF_under_scm() {
-    if promptF_scm_check_CVS ; then
+# to complete with other SCM tools
+
+scm_under_scm()
+{
+    if scm_check_CVS ; then
 	return 0
-    elif promptF_scm_check_SVN ; then
+    elif scm_check_SVN ; then
 	return 0
-    elif promptF_scm_check_GIT ; then
+    elif scm_check_GIT ; then
 	return 0
     else
 	return 1
     fi
 }
-# export -f promptF_under_scm
+export -f scm_under_scm
 
-function promptF_scm_check_CVS {
+scm_check_CVS()
+{
     if [ -d "CVS" ] ; then
-	promptF_scm_status="in CVS wk"
+	scm_scm_status="in CVS wk"
 	return 0
     fi
     return 1
 }
-# export -f promptF_scm_check_CVS
+export -f scm_check_CVS
 
-function promptF_scm_check_SVN {
+scm_check_SVN()
+{
     if [ -d ".svn" ] ; then
-	promptF_scm_status="in SVN wk"
+	scm_scm_status="in SVN wk"
 	return 0
     fi
     return 1
 }
-# export -f promptF_scm_check_SVN
+export -f scm_check_SVN
 
-function __absolute_dir {
+scm_absdir() #1: path
+{
+    echoD "scm_absdir: $1"
     if [ $scm_env_e_realpath -eq 1 ] ; then
 	$REALPATH "$1"
     elif [ $scm_env_e_readlink -eq 1 ] ; then
 	$READLINK -f "$1"
     else
-	echo "$1"
+	# no way to make this dir absolue...
+	# no-op
+	echo "$1" # return value
     fi
 }
+export -f scm_absdir
 
-# arg: #1: starting path for search
-function _scm_find_git_dir {
+scm_find_git_dir() #1: starting path for search
+{
     local dir=${1:-$PWD}
     local r=0
+
+    echoD "debug _scm_find_git_dir: starting at $dir"
 
     # check environment first
     if [ ! -z "$GIT_DIR" ] ; then
 	if [ -d "$GIT_DIR" ] ; then
-	    dir=$(__absolute_dir "$GIT_DIR")
+	    dir=$(scm_absdir "$GIT_DIR")
 	else
 	    # error: $GIT_DIR points to non-existing directory
 	    dir=""
 	    r=1
 	fi
     else
+	echoD "sfgd1: $dir"
 	until [ "$dir" -ef / ]; do
 	    if [ -d "$dir/.git" ]; then
-		dir=$(__absolute_dir "$dir")
+		dir=$(scm_absdir "$dir")
 		break
 	    fi
-            dir=$(__absolute_dir "${dir}/..")
+            dir=$(scm_absdir "${dir}/..")
+	    echoD "sfgd2: $dir"
 	done
     fi
-    echo "$dir"
+    echo "$dir" # return value
     return $r
 }
-export -f _scm_find_git_dir
+export -f scm_find_git_dir
 
-# argument requis: chemin de la repository
-function _scm_find_git_branch {
+scm_find_git_branch() #1: repository path
+{
     local dir=
-    local git_branch=
+    local branch=
     local head=
 
-    dir=${1:?"_scm_find_git_branch() requires 1 argument: repository path"}
+    dir=${1:?"scm_find_git_branch() requires 1 argument: repository path"}
     if [ -f "$dir/.git/HEAD" ]; then
 	head=$(< "$dir/.git/HEAD")
 	if [[ $head == ref:\ refs/heads/* ]]; then
-	    git_branch="${head#*/*/}"
+	    branch="${head#*/*/}"
 	elif [[ $head != '' ]]; then
-	    git_branch='(detached)'
+	    branch='(detached)'
 	else
-	    git_branch='(unknown)'
+	    branch='(unknown)'
 	fi
-	echo $git_branch
+	echo $branch # return value
 	return 0
     fi
-    echo ""
+    echo "" # return value
     return 1
 }
-export -f _scm_find_git_branch
+export -f scm_find_git_branch
 
-function promptF_scm_check_GIT {
-    local git_branch=
-    local git_repo=
-    local dir=$(_scm_find_git_dir)
+scm_check_GIT()
+{
+    local branch=
+    local repo=
+    local dir=$(scm_find_git_dir)
 
     if [ $? -ne 0 ] ; then
-	promptF_scm_status=""
+	scm_scm_status=""
 	return 1
     fi
-    git_repo=${dir##*/}
-    # on peut encore avoir une chaine vide ici
-    if [ -z "$git_repo" ] ; then
-	promptF_scm_status=""
+    repo=${dir##*/}
+    # we can still have an empty string here
+    if [ -z "$repo" ] ; then
+	scm_scm_status=""
 	return 1
     fi
 
-    # il faut encore récupérer la branche courante
-    git_branch=$(_scm_find_git_branch "$dir")
+    # pick up the current branch
+    branch=$(scm_find_git_branch "$dir")
     if [ $? -ne 0 ] ; then
-	promptF_scm_status=""
+	scm_scm_status=""
 	return 1
     fi
-    promptF_scm_status="[${git_repo}] _${git_branch}_"
+    scm_scm_status="[${repo}] _${branch}_"
     return 0
 }
-# export -f promptF_scm_check_GIT
+export -f scm_check_GIT
 
-echo "Setup scm (cvs/svn/git) extended prompt"
-promptF_setup
+ifD echo "Setup scm (cvs/svn/git) extended prompt"
+scm_prompt_setup
 
 # ??? pas de completion pour CVS sur Debian ???
 
 # Completion Bash pour Git
-if [ $scm_env_o_git -eq 1 ] ; then
-	# sur Debian
-	[ -f /etc/bash_completion.d/git ] && \
-		. /etc/bash_completion.d/git
-	# sur Mac OSX (avec Mac Ports)
-	[ -f /opt/local/share/doc/git-core/contrib/completion/git-completion.bash ] && \
-		. /opt/local/share/doc/git-core/contrib/completion/git-completion.bash
+if [ $scm_env_o_git -eq $ENABLED ] ; then
+    # sur Debian
+    [ -f /etc/bash_completion.d/git ] && \
+	. /etc/bash_completion.d/git
+    # sur Mac OSX (avec Mac Ports)
+    [ -f /opt/local/share/doc/git-core/contrib/completion/git-completion.bash ] && \
+	. /opt/local/share/doc/git-core/contrib/completion/git-completion.bash
 fi
 
 # Completion Bash pour Subversion
-if [ $scm_env_o_svn -eq 1 ] ; then
-	# sur Debian
-	[ -f /etc/bash_completion.d/subversion ] && . /etc/bash_completion.d/subversion
-	# sur Mac OSX (?)
+if [ $scm_env_o_svn -eq $ENABLED ] ; then
+    # sur Debian
+    [ -f /etc/bash_completion.d/subversion ] && \
+	. /etc/bash_completion.d/subversion
+    # sur Mac OSX (?)
 fi
-
-set +a
-
