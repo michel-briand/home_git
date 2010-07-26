@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Mon Jul 26 19:56:19 2010
+# Modified: Mon Jul 26 20:07:44 2010
 #
 # Environnement bash pour la gestion de configuration.
 # Bash environment for configuration management.
@@ -325,23 +325,23 @@ scm_check_GIT()
 
     if [ $? -ne 0 ] ; then
 	scm_scm_status=""
-	return 1
+	return $FALSE
     fi
     repo=${dir##*/}
     # we can still have an empty string here
     if [ -z "$repo" ] ; then
 	scm_scm_status=""
-	return 1
+	return $FALSE
     fi
 
     # pick up the current branch
     branch=$(scm_find_git_branch "$dir")
     if [ $? -ne 0 ] ; then
 	scm_scm_status=""
-	return 1
+	return $FALSE
     fi
     scm_scm_status="[${repo}] _${branch}_"
-    return 0
+    return $TRUE
 }
 export -f scm_check_GIT
 
