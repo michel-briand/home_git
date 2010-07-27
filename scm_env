@@ -2,7 +2,7 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Mon Jul 26 20:07:44 2010
+# Modified: Tue Jul 27 02:56:36 2010
 #
 # Environnement bash pour la gestion de configuration.
 # Bash environment for configuration management.
@@ -142,10 +142,12 @@ echoD "scm_env_e_realpath=$scm_env_e_realpath $REALPATH"
 echoD "scm_env_e_readlink=$scm_env_e_readlink $READLINK"
 echoD
 
-scm_COLORS=( "\[\033[0;32m\]" "\[\033[0;36m\]" "\[\033[0;35m\]" )
-scm_NO_COLOR="\[\033[0m\]"
-scm_RED="\[\033[0;31m\]"
-scm_BOLD="\[\033[1m\]"
+scm_COLORS=( "\033[0;32m" "\033[0;36m" "\033[0;35m" )
+scm_NO_COLOR="\033[0m"
+scm_RED="\033[0;31m"
+scm_GREEN="\033[0;32m"
+scm_YELLOW="\033[0;33m"
+scm_BOLD="\033[1m"
 scm_defcolor=${scm_COLORS[2]}
 scm_prompt_status="uninitialized"
 scm_scm_status=
