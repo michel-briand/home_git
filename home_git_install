@@ -1,0 +1,104 @@
+#!/bin/bash
+#
+# Ce script peut être téléchargé indépendemment
+# de home_git (il est autonome).
+#
+# 0. On vérifie le PATH pour le lien symbolique
+#
+# 1. On clone la repository home_git
+#
+# 2. On créé un lien symbolique dans le PATH
+#
+# 3. On clone la repository HOME_GIT
+#
+# 4. On sélectionne une branche pour la mise à jour
+#
+# 5. On met à jour le répertoire HOME
+#
+
+home_git_default_base_dir="$HOME/jecm"
+home_git_default_url="ssh://eana/home/michel/jecm/home_git"
+HOME_GIT_default_base_dir="$HOME"
+HOME_GIT_default_dir=".git_home_$USER"
+HOME_GIT_default_work_tree="$HOME"
+HOME_GIT_default_origin="eana"
+HOME_GIT_default_branch="master"
+
+# 1.
+clone_home_git() #1: base directory 2: url
+{
+    local base_dir="$1"
+    local url="$2"
+    if [ ! -d "$base_dir" ] ; then
+	ifV echo "Création du répertoire de base: $base_dir"
+	mkdir "$base_dir"
+    fi
+    cd "$base_dir"
+    ifV echo "Clonage du dépôt home_git depuis: $url"
+    git clone "$2"
+    cd - >/dev/null
+}
+
+# 0.
+check_for_path_and_symlink()
+{
+    ifV echo "On vérifie que $HOME/bin est dans le PATH..."
+    if echo $PATH | tr ':' '\n' | grep "$HOME" | grep -q bin ; then
+	if [ -e "$HOME/bin/home_git" ] ; then
+	    fatal "Un fichier home_git est déjà installé dans $HOME/bin"
+	    return 1
+	fi
+    else
+	fatal "Le PATH ne contient pas $HOME/bin"
+	return 1
+    fi
+}
+
+# 2.
+create_symlink_in_path() #1: home_git directory
+{
+    local home_git_dir="$1"
+
+    ifV echo "On installe un lien symbolique dans $HOME/bin"
+    cd "$HOME/bin"
+    ln -s "$home_git_dir"/home_git
+    cd - >/dev/null
+}
+
+# 3.
+clone_HOME_GIT() #1: url
+{
+    local url="$1"
+    cd "$HOME_GIT_default_base_dir"
+    ifV echo "Clonage du dépôt HOME_GIT, SANS CHECK-OUT, depuis: $url"
+    git clone \
+	--no-checkout \
+	--origin "$HOME_GIT_default_origin" \
+	--branch "$HOME_GIT_default_branch" \
+	"$url" "$HOME_GIT_default_dir"
+    cd - >/dev/null
+}
+
+# 4.
+select_home_git_branch()
+{
+    # NB: dans une configuration mono-utilisateur, on
+    # a besoin uniquement de différencier les spécificités
+    # des plate-formes... Linux, Mac, ...
+    # Cependant avoir deux branches pour le .bashrc est un
+    # peu contraignant... On doit vérifier à chaque mise à
+    # jour que le merge se passe bien. Dans un soucis d'é-
+    # conomie de commandes, on va traiter les différences
+    # de plate-forme à l'intérieur des fichiers essentiels.
+    # Certains fichiers pourront toutefois être traités via
+    # les branches, quand ils sont trop différents, tout
+    # simplement...
+    return 0
+}
+
+# 5.
+update_from_HOME_GIT()
+{
+    
+}
+
