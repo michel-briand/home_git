@@ -2,8 +2,6 @@
 #
 # -*-coding:iso-8859-15;-*-
 #
-# Modified: Mon Jul 26 19:21:58 2010
-# 
 # Gérer certains fichiers de la $HOME avec Git.
 
 set -a
@@ -85,6 +83,16 @@ home_git_git() {
 	--work-tree="$HOME_GIT_WORK_TREE" "$@" 
 }
 export -f home_git_git
+
+#
+# Wrapper pour gitk
+#
+home_git_gitk() {
+    GIT_DIR="$HOME_GIT_DIR" \
+	GIT_WORK_TREE="$HOME_GIT_WORK_TREE" \
+	gitk "$@" 
+}
+export -f home_git_gitk
 
 #
 # Pour l'instant la configuration contient une variable
@@ -186,6 +194,7 @@ alias HG=home_git_git
 alias HGL=home_git_list_managed
 alias HGS=home_git_status
 alias HGSF=home_git_status_ex
+alias HGK=home_git_gitk
 
 # TODO:
 # branches: une par machine (sur eana j'ai par exemple
@@ -195,5 +204,13 @@ alias HGSF=home_git_status_ex
 # Le fichier .xsession ...
 # Les scripts utiles dans bin/
 # Ma photo !
+
+# TODO : mode intéractif très proche de l'utilisateur
+# => installation sur une nouvelle machine
+#    cloner la repo home_git, créer le lien symbolique
+#    dans le PATH, cloner la repo HOME_GIT, choisir
+#    une branche pour la mise à jour
+#
+# => mis à jour depuis la repos
 
 unset u
