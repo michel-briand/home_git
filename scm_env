@@ -1,11 +1,8 @@
 #!/bin/bash
+# -*-mode:sh;coding:iso-8859-15;-*-
 #
-# -*-coding:iso-8859-15;-*-
-#
-# Modified: Tue Jul 27 02:56:36 2010
-#
-# Environnement bash pour la gestion de configuration.
-# Bash environment for configuration management.
+# (fr) Environnement bash pour la gestion de configuration.
+# (en) Bash environment for configuration management.
 #
 # Copyright (C) 2009, 2010 Michel Briand.
 #
