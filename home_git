@@ -129,7 +129,7 @@ export -f home_git_add
 # et le dépôt git (index)
 #
 home_git_status() {
-    home_git_git diff --stat
+    home_git_git diff --stat $@
 }
 export -f home_git_status
 
@@ -190,11 +190,39 @@ home_git_sync_all_peers() {
 }
 export -f home_git_sync_all_peers
 
-alias HG=home_git_git
-alias HGL=home_git_list_managed
-alias HGS=home_git_status
-alias HGSF=home_git_status_ex
-alias HGK=home_git_gitk
+#
+# Ajoute et commite les fichiers en argument
+home_git_add_and_commit() {
+    set -x
+    # pour éviter toute erreur d'argument, on impose
+    # que ce soit 1 ou plusieurs fichiers qui existent
+    local i f
+    if [ $# -lt 1 ] ; then
+	echo "HG: requière au moins un argument"
+	return
+    fi
+    for i in $(seq 1 $#) ; do
+	eval f=\$$i
+	if [ ! -f "$f" ] ; then
+	    echo "HG: requière des fichiers en argument"
+	    return
+	fi
+    done
+    home_git_git add $@
+    home_git_git commit -v
+}
+export -f home_git_add_and_commit
+#
+
+
+alias HG=home_git_git             # commande "principale"
+alias HGL=home_git_list_managed   # liste des fichiers gérés
+alias HGS=home_git_status         # le plus utile
+alias HGSF=home_git_status_ex     # statut perso (pas très utile)
+alias HGK=home_git_gitk           # vue graphique
+
+alias HGD='home_git_status -p'	# différences
+alias HGCO=home_git_add_and_commit
 
 # TODO:
 # branches: une par machine (sur eana j'ai par exemple
