@@ -193,7 +193,6 @@ export -f home_git_sync_all_peers
 #
 # Ajoute et commite les fichiers en argument
 home_git_add_and_commit() {
-    set -x
     # pour éviter toute erreur d'argument, on impose
     # que ce soit 1 ou plusieurs fichiers qui existent
     local i f
