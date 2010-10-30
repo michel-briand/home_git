@@ -139,13 +139,17 @@ echoD "scm_env_e_realpath=$scm_env_e_realpath $REALPATH"
 echoD "scm_env_e_readlink=$scm_env_e_readlink $READLINK"
 echoD
 
-scm_COLORS=( "\033[0;32m" "\033[0;36m" "\033[0;35m" )
-scm_NO_COLOR="\033[0m"
-scm_RED="\033[0;31m"
-scm_GREEN="\033[0;32m"
-scm_YELLOW="\033[0;33m"
-scm_BOLD="\033[1m"
-scm_defcolor=${scm_COLORS[2]}
+scm_COLORS=( "\e[0;32m" "\e[0;36m" "\e[0;35m" )
+scmNC="\e[0m"
+scmRED="\e[0;31m"
+scmGR="\e[0;32m"
+scmY="\e[0;33m"
+scmBO="\e[1m"
+scnNBO="\e[22m" # reset bold
+scmDF=${scm_COLORS[2]} # default color
+# Title bar complete string: "\[\e]1;icon-title\007\e]2;main-title\007\]"
+scmTIB="\[\e]2;" # title bar begin
+scmTIE="\007\]" # title bar end
 scm_prompt_status="uninitialized"
 scm_scm_status=
 scm_cwd=
@@ -165,7 +169,7 @@ scm_prompt_setup()
     local c
     scm_user_color
     c=$?
-    scm_defcolor=${scm_COLORS[$c]}
+    scmDF=${scm_COLORS[$c]}
     scm_prompt_status="setup"
     # only set titlebar in a capable terminal:
     case $TERM in
@@ -179,18 +183,31 @@ export -f scm_prompt_setup
 
 scm_prompt_update()
 {
+    local t s c st ts
+    # set current directory
     scm_curdir
+    c=$scm_cwd
+    # get scm status
     if scm_under_scm ; then
-	scm_prompt_status="${scm_BOLD}$scm_scm_status${scm_defcolor}"
+	st=" $scm_scm_status"
     else
-	scm_prompt_status=""
+	st=""
     fi
+    if [ ! -z "$st" ] ; then
+	s="${scmBO}${st}${scmNBO}"
+	ts="${st}"
+    fi
+    # set prompt
+    PS1="${scmDF}\u@\h$s $c \$${scmNC} "
+    # set title bar
     if [ $scm_env_e_titlebar -eq $ENABLED ] ; then
 	# since we are in PROMPT_COMMAND callback, 
-	# let's write directly to stdout
-        echo -ne "\033]0;\007\033]2;${USER}@${HOSTNAME%%.*} $scm_cwd $scm_scm_status\007"
+	# we could write directly to stdout if PS1
+	# too long...
+	t="${scmTIB}\u@\h${ts} $c${scmTIE}"
+	PS1="${t}${PS1}"
     fi
-    export PS1="${scm_defcolor}\u@\h ${scm_prompt_status} $scm_cwd \\$ $scm_NO_COLOR"
+    export PS1
 }
 export -f scm_prompt_update
 
