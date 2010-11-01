@@ -28,6 +28,10 @@ if [ -z "$scm_env_o_debug" ] ; then
     # if already defined in environment, do nothing
     scm_env_o_debug=$DISABLED # disable debug by default
 fi
+if [ -z "$scm_env_o_super_debug" ] ; then
+    # if already defined in environment, do nothing
+    scm_env_o_super_debug=$DISABLED # disable super debug by default
+fi
 scm_env_o_git=$ENABLED # enable git by default
 scm_env_o_svn=$DISABLED # disable svn by default
 scm_env_e_readlink=$DISABLED # use readlink ? will 'require' it
@@ -38,6 +42,7 @@ scm_env_e_titlebar=$DISABLED # we check for xterm in setup
 
 shopt -s expand_aliases
 alias ifD='[ $scm_env_o_debug -eq $ENABLED ] && '
+alias ifDD='[ $scm_env_o_super_debug -eq $ENABLED ] && '
 
 # it's really important to have an echo-like function that
 # do not alter stdout because many functions are expecting
@@ -49,7 +54,7 @@ echoD()
 }
 export -f echoD
 
-ifD set -x
+ifDD set -x
 
 # Requirements
 
@@ -153,6 +158,7 @@ scmTIE="\007\]" # title bar end
 scm_prompt_status="uninitialized"
 scm_scm_status=
 scm_cwd=
+scm_cwd_abs=
 
 scm_user_color() 
 {
@@ -223,6 +229,7 @@ scm_curdir()
 	fi
     fi
     scm_cwd=$cwd
+    scm_cwd_abs=$(scm_absdir "$scm_cwd")
 }
 export -f scm_curdir
 
@@ -235,6 +242,8 @@ scm_under_scm()
     elif scm_check_SVN ; then
 	return 0
     elif scm_check_GIT ; then
+	return 0
+    elif scm_check_HOME_GIT ; then
 	return 0
     else
 	return 1
@@ -262,17 +271,32 @@ scm_check_SVN()
 }
 export -f scm_check_SVN
 
+scm_check_HOME_GIT()
+{
+    if [ "$scm_cwd_abs" -ef "$scm_home_git_abs" ] ; then
+	scm_scm_status="HOME_GIT"
+	return 0
+    fi
+    return 1
+}
+export -f scm_check_HOME_GIT
+
 scm_absdir() #1: path
 {
-    echoD "scm_absdir: $1"
+    if [ "$1" -ef "$HOME" ] ; then
+	echo $HOME
+	return
+    fi
+    local tmp=${1/'~'/"$HOME"}
+    echoD "scm_absdir: $tmp"
     if [ $scm_env_e_realpath -eq 1 ] ; then
-	$REALPATH "$1"
+	$REALPATH "$tmp"
     elif [ $scm_env_e_readlink -eq 1 ] ; then
-	$READLINK -f "$1"
+	$READLINK -f "$tmp"
     else
 	# no way to make this dir absolue...
 	# no-op
-	echo "$1" # return value
+	echo "$tmp" # return value
     fi
 }
 export -f scm_absdir
@@ -281,8 +305,9 @@ scm_find_git_dir() #1: starting path for search
 {
     local dir=${1:-$PWD}
     local r=$TRUE
+    local parent
 
-    echoD "debug _scm_find_git_dir: starting at $dir"
+    echoD "FIND GIT DIR: checking $dir"
 
     # check environment first
     if [ ! -z "$GIT_DIR" ] ; then
@@ -294,16 +319,28 @@ scm_find_git_dir() #1: starting path for search
 	    r=$FALSE
 	fi
     else
-	echoD "sfgd1: $dir"
-	until [ "$dir" -ef / ]; do
-	    if [ -d "$dir/.git" ]; then
-		dir=$(scm_absdir "$dir")
-		break
-	    fi
-            dir=$(scm_absdir "${dir}/..")
-	    echoD "sfgd2: $dir"
-	done
+	echoD "FIND GIT DIR: starting search at $dir"
+	# traitement spécifique de la HOME
+	if [ "$dir" -ef "$HOME" ] ; then
+	    dir=$HOME
+	else
+	    until [ "$dir" -ef / ] || [ "$dir" -ef "$HOME" ] ; do
+		if [ -d "$dir/.git" ]; then
+		    dir=$(scm_absdir "$dir")
+		    echoD "FIND GIT DIR: .git found at $dir"
+		    break
+		fi
+		parent=${dir%/*}
+		if [ -z "$parent" ] ; then
+		    dir=/
+		else
+		    dir=$(scm_absdir "$parent")
+		fi
+		echoD "FIND GIT DIR: not found here, going $dir"
+	    done
+	fi
     fi
+    echoD "FIND GIT DIR: end at $dir"
     echo "$dir" # return value
     return $r
 }
@@ -382,4 +419,12 @@ if [ $scm_env_o_svn -eq $ENABLED ] ; then
     [ -f /etc/bash_completion.d/subversion ] && \
 	. /etc/bash_completion.d/subversion
     # sur Mac OSX (?)
+fi
+
+# Support home_git
+if [ ! -z "$HOME_GIT_WORK_TREE" ] ; then
+    scm_home_git_abs=$(scm_absdir "$HOME_GIT_WORK_TREE")
+    ifD echo "support home_git activé ($scm_home_git_abs)"
+else
+    scm_home_git_abs=
 fi
