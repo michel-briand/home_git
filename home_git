@@ -25,24 +25,11 @@ shopt -s expand_aliases
 # =======================================
 
 if [ -z "$o_scm" ] ; then
-    o_scm=$DISABLED
+    o_scm=$ENABLED
 fi
 
-# SUPPPORT scm_env
-case $o_scm in
-    $ENABLED)
-	if $(which scm_env 2>&1 >/dev/null) ; then
-	    # le support de scm_env est activé: le but est
-	    # de modifier le PS1 en fonction du statut et
-	    # des actions...
-	    . scm_env
-	fi
-	;;
-    *) ;;
-esac
-
 # REQUIRE POSIX TOOLS / GNU coreutils
-u=$(id -un)
+home_git_username=$(id -un)
 
 # DISPLAY FUNCTION
 home_git_em_color="\033[0;31m"
@@ -65,7 +52,7 @@ echo_em() {
 }
 export -f echo_em
 
-HOME_GIT_DIR="$HOME/.git_home_${u}"
+HOME_GIT_DIR="$HOME/.git_home_${home_git_username}"
 HOME_GIT_WORK_TREE="$HOME"
 
 #
@@ -223,21 +210,16 @@ alias HGK=home_git_gitk           # vue graphique
 alias HGD='home_git_status -p'	# différences
 alias HGCO=home_git_add_and_commit
 
-# TODO:
-# branches: une par machine (sur eana j'ai par exemple
-# quelques logiciels installés (utilisables) seulement là)
-# Il y a aussi les logiciels avec des préférences ou des
-# credentials... à voir...
-# Le fichier .xsession ...
-# Les scripts utiles dans bin/
-# Ma photo !
+# Support scm_env
+case $o_scm in
+    $ENABLED)
+	if $(which scm_env 2>&1 >/dev/null) ; then
+	    # le support de scm_env est activé: le but est
+	    # de modifier le PS1 en fonction du statut et
+	    # des actions...
+	    . scm_env
+	fi
+	;;
+    *) ;;
+esac
 
-# TODO : mode intéractif très proche de l'utilisateur
-# => installation sur une nouvelle machine
-#    cloner la repo home_git, créer le lien symbolique
-#    dans le PATH, cloner la repo HOME_GIT, choisir
-#    une branche pour la mise à jour
-#
-# => mis à jour depuis la repos
-
-unset u
