@@ -144,6 +144,9 @@ echoD "scm_env_e_realpath=$scm_env_e_realpath $REALPATH"
 echoD "scm_env_e_readlink=$scm_env_e_readlink $READLINK"
 echoD
 
+# WARNING:
+# use \[ \] to remove inner text from the space count
+
 scm_COLORS=( "\e[0;32m" "\e[0;36m" "\e[0;35m" )
 scmNC="\e[0m"
 scmRED="\e[0;31m"
@@ -153,8 +156,8 @@ scmBO="\e[1m"
 scnNBO="\e[22m" # reset bold
 scmDF=${scm_COLORS[2]} # default color
 # Title bar complete string: "\[\e]1;icon-title\007\e]2;main-title\007\]"
-scmTIB="\[\e]2;" # title bar begin
-scmTIE="\007\]" # title bar end
+scmTIB="\e]2;" # title bar begin
+scmTIE="\a" # title bar end (\a = \007)
 scm_prompt_status="uninitialized"
 scm_scm_status=
 scm_cwd=
@@ -200,18 +203,18 @@ scm_prompt_update()
 	st=""
     fi
     if [ ! -z "$st" ] ; then
-	s="${scmBO}${st}${scmNBO}"
+	s="\[${scmBO}\]${st}\[${scmNBO}\]"
 	ts="${st}"
     fi
     # set prompt
-    PS1="${scmDF}\u@\h$s $c \$${scmNC} "
+    PS1="\[${scmDF}\]\u@\h$s $c \$\[${scmNC}\] "
     # set title bar
     if [ $scm_env_e_titlebar -eq $ENABLED ] ; then
 	# since we are in PROMPT_COMMAND callback, 
 	# we could write directly to stdout if PS1
 	# too long...
 	t="${scmTIB}\u@\h${ts} $c${scmTIE}"
-	PS1="${t}${PS1}"
+	PS1="\[${t}\]${PS1}"
     fi
     export PS1
 }
