@@ -192,10 +192,21 @@ export -f scm_prompt_setup
 
 scm_prompt_update()
 {
-    local t s c st ts
+    local t s c d st ts
     # set current directory
     scm_curdir
-    c=$scm_cwd
+    # print a nice ~ instead of $HOME
+    if [ "${scm_cwd}" -ef "$HOME" ] ; then
+	d='~'
+    else
+	d=${scm_cwd/$HOME\//'~'/}
+    fi
+    # reduce width : 25 characters max
+    if [ ${#d} -gt 25 ] ; then
+	c="...${d:10}"
+    else
+	c=$d
+    fi
     # get scm status
     if scm_under_scm ; then
 	st=" $scm_scm_status"
@@ -222,16 +233,7 @@ export -f scm_prompt_update
 
 scm_curdir()
 {
-    local cwd
-    if [ "$PWD" -ef "$HOME" ] ; then
-	cwd='~'
-    else
-	cwd=${PWD/$HOME\//'~'/}
-	if [ ${#cwd} -gt 20 ] ; then
-	    cwd="...${cwd:10}"
-	fi
-    fi
-    scm_cwd=$cwd
+    scm_cwd=$PWD
     scm_cwd_abs=$(scm_absdir "$scm_cwd")
 }
 export -f scm_curdir
