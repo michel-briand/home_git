@@ -9,19 +9,27 @@
 # This file is released under the GNU GPL license.
 #
 
+# SH library
+SH_LIBRARY=${SH_LIBRARY:-~/jecm/shlib}
+. $SH_LIBRARY/require.sh 2>/dev/null || {
+    echo "Library require.sh is required (please set SH_LIBRARY to a sensible value)." >&2
+    return 1
+}
+require_is_verbose
+
+# --------------------------------------------
+# Export all variable definied in this section
+#
+set -a
+
+scm_platform=$R_SYSTEM # from require.sh
+
 # Booleans
 
 TRUE=0
 FALSE=1
 ENABLED=1
 DISABLED=0
-
-export TRUE FALSE ENABLED DISABLED
-
-# NB: Christophe, Éric, ... peut être pensez-vous que je cherche
-#     des poils sur les oeufs avec ces booléens... Si vous avez
-#     envie de simplifier tout ça, n'hésitez pas à me proposer
-#     quelque chose...
 
 # Options
 if [ -z "$scm_env_o_debug" ] ; then
@@ -38,13 +46,23 @@ scm_env_e_readlink=$DISABLED # use readlink ? will 'require' it
 scm_env_e_realpath=$DISABLED # use realpath ? will 'require' it
 scm_env_e_titlebar=$DISABLED # we check for xterm in setup
 
+set +a
+# end of "all export" section
+# --------------------------------------------
+
 # Debug function
 
 shopt -s expand_aliases
 alias ifD='[ $scm_env_o_debug -eq $ENABLED ] && '
 alias ifDD='[ $scm_env_o_super_debug -eq $ENABLED ] && '
 
-# it's really important to have an echo-like function that
+# Super debug
+
+ifDD set -x
+
+# Error & messages
+
+# It's really important to have an echo-like function that
 # do not alter stdout because many functions are expecting
 # a return value through stdout
 
@@ -52,92 +70,16 @@ echoD()
 {
     ifD echo "$*" >&2
 }
-export -f echoD
-
-ifDD set -x
 
 # Requirements
 
-# require fonction will check for a command availability
-# in PATH and return its status either basically ($?) or
-# in a status variable (if given)
-
-require() #1: command #2(opt): status variable (ENABLED/DISABLED)
-{
-    local tmp=
-    local cmd="${1?-'require(): argument required: command name'}"
-    local var_cmd="$2"
-    local var="$3"
-    local status=$DISABLED
-
-    # check for command with 'which'
-    tmp=$(which "$1")
-    if [ $? -eq 0 ] ; then
-	status=$ENABLED
-    else
-	# in case this does not work, check with 'type' (HP, Sun)
-	tmp=$(type -p "$1")
-	if [ $? -eq 0 ] ; then
-	    status=$ENABLED
-	fi
-    fi
-
-    # check for command executable bit
-    if [ $status -eq $ENABLED ] ; then
-	if [ ! -x "$tmp" ] ; then
-	    echoD "require: command was found but is not executable: $cmd"
-	    status=$DISABLED
-	fi
-    fi
-
-    # check if we were called with only one argument
-    if [ -z "$var_cmd" ] ; then
-	# yes: simply return status
-	return $status
-    else
-	# at least a variable to store the path of command in
-	eval "$var_cmd=$tmp"
-	# check if we were called with three arguments
-	if [ -z "$var" ] ; then
-	    # return status basically
-	    return $status
-	else
-	    # return status through a variable
-	    eval "$var=$status"
-	    return $status
-	fi
-    fi
-}
-export -f require
-
-# Maintenant, avec la fonction require(), on peut écrire la ligne
-#   REALPATH=$(which realpath) && scm_env_e_realpath=1
-# comme ceci:
 require realpath REALPATH scm_env_e_realpath
 
-# De la même manière on peut ré-écrire les lignes suivantes
-#   if [ $scm_env_e_realpath -ne 1 ] ; then
-#   	case $(uname -s) in
-#	    # require GNU coreutils (with ports / fink)
-#		# if "which" succeed then we know that we can use "readlink"
-#	    Darwin) READLINK=$(which greadlink) && scm_env_e_readlink=1 ;;
-#	    *) READLINK=$(which readlink) && scm_env_e_readlink=1 ;;
-#	esac
-#   fi
-# comme ceci:
-scm_platform=$(uname -s)
-case $scm_platform in
+case $R_SYSTEM in
     Darwin) require greadlink READLINK scm_env_e_readlink ;;
     Linux) require readlink READLINK scm_env_e_readlink ;;
     *) echo "Platform not supported: $scm_platform"; return 1 ;;
 esac
-
-    # uid=>couleur
-    # user@host {status}
-    # scm=>
-    # oui     repo|br subdir
-    # non     dir
-    # $
 
 echoD "=== debug require ==="
 echoD "scm_env_e_realpath=$scm_env_e_realpath $REALPATH"
@@ -406,7 +348,7 @@ export -f scm_check_GIT
 ifD echo "Setup scm (cvs/svn/git) extended prompt"
 scm_prompt_setup
 
-# ??? pas de completion pour CVS sur Debian ???
+# TODO: pas de completion pour CVS sur Debian ?
 
 # Completion Bash pour Git
 if [ $scm_env_o_git -eq $ENABLED ] ; then
