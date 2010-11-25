@@ -81,6 +81,9 @@ case $R_SYSTEM in
     *) echo "Platform not supported: $scm_platform"; return 1 ;;
 esac
 
+require_clear_trap
+# End of requirements
+
 echoD "=== debug require ==="
 echoD "scm_env_e_realpath=$scm_env_e_realpath $REALPATH"
 echoD "scm_env_e_readlink=$scm_env_e_readlink $READLINK"
