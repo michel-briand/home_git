@@ -1,0 +1,19 @@
+# -*- coding: iso-8859-15; -*-
+
+Home Git : outil pour gérer $HOME avec Git
+------------------------------------------
+
+Pré-requis:
+
+Les scripts présents dans ce dépôt nécessitent la bibliothèque
+présente dans le dépôt SHLIB. 
+
+L'emplacement du dépôt SHLIB doit être spécifié via la variable
+SH_LIBRARY.
+
+Utilisation:
+
+Sourcer le script 'home_git'.
+Les fonctions de l'outil sont accessibles via les alias.
+Une aide sommaire est affichée avec 'HG' sans argument.
+
