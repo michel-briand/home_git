@@ -55,14 +55,23 @@ export -f echo_em
 HOME_GIT_DIR="$HOME/.git_home_${home_git_username}"
 HOME_GIT_WORK_TREE="$HOME"
 
+home_git_usage() {
+    echo "HG (Home Git) : outil pour gérer \$HOME avec Git"
+    echo
+    echo "Alias:"
+    grep ^alias $HOME/bin/home_git | grep -v ^"alias if"
+    echo
+    echo "Environnement:"
+    echo "GIT_DIR=$HOME_GIT_DIR"
+    echo "GIT_WORK_TREE=$HOME_GIT_WORK_TREE"
+}
+
 #
 # Wrapper pour git dans notre environnement "home utilisateur"
 #
 home_git_git() {
     [ -z "$*" ] && {
-	echo "Ceci est un alias pour git avec pour environnement:"
-	echo "GIT_DIR=$HOME_GIT_DIR"
-	echo "GIT_WORK_TREE=$HOME_GIT_WORK_TREE"
+	home_git_usage
 	return 0
     }
     # gestion de less avec git : à travailler !!!
@@ -151,32 +160,6 @@ home_git_status_ex() {
 }
 export home_git_status_ex
 
-home_git_list_peers() {
-    # fichier de configuration
-    home_git_load_conf
-    echo "HG peers: $home_git_peers"
-}
-export -f home_git_list_peers
-
-home_git_sync_peer() { #1: peer remote name
-    local p=$1
-    if [ -z "$p" ] ; then
-	echo "Required argument: peer name"
-	return 1
-    fi
-    ifV echo_em "HG synching peer $p..."
-    home_git_git fetch $p
-    home_git_git diff --stat $p
-}
-export -f home_git_sync_peer
-
-home_git_sync_all_peers() {
-    for p in $home_git_peers ; do
-	home_git_sync_peer $p
-    done
-}
-export -f home_git_sync_all_peers
-
 #
 # Ajoute et commite les fichiers en argument
 home_git_add_and_commit() {
@@ -201,14 +184,14 @@ export -f home_git_add_and_commit
 #
 
 
-alias HG=home_git_git             # commande "principale"
-alias HGL=home_git_list_managed   # liste des fichiers gérés
-alias HGS=home_git_status         # le plus utile
-alias HGSF=home_git_status_ex     # statut perso (pas très utile)
-alias HGK=home_git_gitk           # vue graphique
+alias HG=home_git_git              # alias principal (wrapper git)
+alias HGL=home_git_list_managed    # affiche la liste des fichiers gérés
+alias HGS=home_git_status          # affiche l'état courant (résumé)
+alias HGSF=home_git_status_ex      # affiche l'état courant (autre façon)
+alias HGK=home_git_gitk            # lance l'interface graphique (gitk)
 
-alias HGD='home_git_status -p'	# différences
-alias HGCO=home_git_add_and_commit
+alias HGD='home_git_status -p'     # affiche l'état courant (détaillé)
+alias HGCO=home_git_add_and_commit # ajoute et commit les fichiers en argument
 
 # Support scm_env
 case $o_scm in

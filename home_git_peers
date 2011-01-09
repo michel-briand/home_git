@@ -1,0 +1,28 @@
+# -*- mode:sh; coding: iso-8859-15; -*-
+#
+
+home_git_list_peers() {
+    # fichier de configuration
+    home_git_load_conf
+    echo "HG peers: $home_git_peers"
+}
+export -f home_git_list_peers
+
+home_git_sync_peer() { #1: peer remote name
+    local p=$1
+    if [ -z "$p" ] ; then
+	echo "Required argument: peer name"
+	return 1
+    fi
+    ifV echo_em "HG synching peer $p..."
+    home_git_git fetch $p
+    home_git_git diff --stat $p
+}
+export -f home_git_sync_peer
+
+home_git_sync_all_peers() {
+    for p in $home_git_peers ; do
+	home_git_sync_peer $p
+    done
+}
+export -f home_git_sync_all_peers
