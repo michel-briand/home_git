@@ -191,7 +191,8 @@ alias HGSF=home_git_status_ex      # affiche l'état courant (autre façon)
 alias HGK=home_git_gitk            # lance l'interface graphique (gitk)
 
 alias HGD='home_git_status -p'     # affiche l'état courant (détaillé)
-alias HGCO=home_git_add_and_commit # ajoute et commit les fichiers en argument
+alias HGCO=home_git_add_and_commit # ajoute et commite les fichiers en argument
+alias HGC='home_git commit -av'    # commite tout ce qui est modifié
 
 # Support scm_env
 case $o_scm in
