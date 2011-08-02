@@ -17,3 +17,20 @@ Sourcer le script 'home_git'.
 Les fonctions de l'outil sont accessibles via les alias.
 Une aide sommaire est affichée avec 'HG' sans argument.
 
+Installation:
+
+Méthode clone --bare
+
+git clone --bare ssh://eana/home/michel/.git_home_michel
+mv .git_home_michel.git .git_home_michel
+git --git-dir="$HOME_GIT_DIR" --work-tree="$HOME_GIT_WORK_TREE" status
+DELS=$(git --git-dir="$HOME_GIT_DIR" --work-tree="$HOME_GIT_WORK_TREE" status | grep delete | sed -e 's|#.*deleted:[ \t]*||')
+for i in $DELS ; do if [ ! -f "${i}.ur" ] ; then if [ -f "${i}" ] ; then mv $i ${i}.ur; fi; fi; done
+git --git-dir="$HOME_GIT_DIR" --work-tree="$HOME_GIT_WORK_TREE" co master
+git --git-dir="$HOME_GIT_DIR" --work-tree="$HOME_GIT_WORK_TREE" checkout master
+for i in $(HG ls); do  echo $i; colordiff -u ${i}.ur $i | less; read; done
+
+Avec cette méthode le défaut c'est qu'on n'a pas la(les) branche(s) de
+l'origine.
+
+Il me faut essayer (et terminer) le script home_git_install.
