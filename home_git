@@ -56,10 +56,15 @@ HOME_GIT_DIR="$HOME/.git_home_${home_git_username}"
 HOME_GIT_WORK_TREE="$HOME"
 
 home_git_usage() {
+    local me=$(which home_git)
+    if [ $? -ne 0 ] ; then
+        echo "fatal: could not find myself"
+        return
+    fi
     echo "HG (Home Git) : outil pour gérer \$HOME avec Git"
     echo
     echo "Alias:"
-    grep ^alias $HOME/bin/home_git | grep -v ^"alias if"
+    grep ^alias $me | grep -v ^"alias if"
     echo
     echo "Environnement:"
     echo "GIT_DIR=$HOME_GIT_DIR"

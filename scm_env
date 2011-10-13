@@ -66,11 +66,6 @@ ifDD set -x
 # do not alter stdout because many functions are expecting
 # a return value through stdout
 
-echoD()
-{
-    ifD echo "$*" >&2
-}
-
 # Requirements
 
 require realpath REALPATH scm_env_e_realpath
@@ -84,10 +79,9 @@ esac
 require_clear_trap
 # End of requirements
 
-echoD "=== debug require ==="
-echoD "scm_env_e_realpath=$scm_env_e_realpath $REALPATH"
-echoD "scm_env_e_readlink=$scm_env_e_readlink $READLINK"
-echoD
+ifDD echo "=== debug require ===" >&2
+ifDD echo "scm_env_e_realpath=$scm_env_e_realpath $REALPATH" >&2
+ifDD echo "scm_env_e_readlink=$scm_env_e_readlink $READLINK" >&2
 
 # WARNING:
 # use \[ \] to remove inner text from the space count
@@ -238,7 +232,7 @@ scm_absdir() #1: path
 	return
     fi
     local tmp=${1/'~'/"$HOME"}
-    echoD "scm_absdir: $tmp"
+    ifDD echo "scm_absdir: $tmp" >&2
     if [ $scm_env_e_realpath -eq 1 ] ; then
 	$REALPATH "$tmp"
     elif [ $scm_env_e_readlink -eq 1 ] ; then
@@ -257,7 +251,7 @@ scm_find_git_dir() #1: starting path for search
     local r=$TRUE
     local parent
 
-    echoD "FIND GIT DIR: checking $dir"
+    ifDD echo "FIND GIT DIR: checking $dir" >&2
 
     # check environment first
     if [ ! -z "$GIT_DIR" ] ; then
@@ -269,7 +263,7 @@ scm_find_git_dir() #1: starting path for search
 	    r=$FALSE
 	fi
     else
-	echoD "FIND GIT DIR: starting search at $dir"
+	ifDD echo "FIND GIT DIR: starting search at $dir" >&2
 	# traitement spécifique de la HOME
 	if [ "$dir" -ef "$HOME" ] ; then
 	    dir=$HOME
@@ -277,7 +271,7 @@ scm_find_git_dir() #1: starting path for search
 	    until [ "$dir" -ef / ] || [ "$dir" -ef "$HOME" ] ; do
 		if [ -d "$dir/.git" ]; then
 		    dir=$(scm_absdir "$dir")
-		    echoD "FIND GIT DIR: .git found at $dir"
+		    ifDD echo "FIND GIT DIR: .git found at $dir" >&2
 		    break
 		fi
 		parent=${dir%/*}
@@ -286,11 +280,11 @@ scm_find_git_dir() #1: starting path for search
 		else
 		    dir=$(scm_absdir "$parent")
 		fi
-		echoD "FIND GIT DIR: not found here, going $dir"
+		ifDD echo "FIND GIT DIR: not found here, going $dir" >&2
 	    done
 	fi
     fi
-    echoD "FIND GIT DIR: end at $dir"
+    ifDD echo "FIND GIT DIR: end at $dir" >&2
     echo "$dir" # return value
     return $r
 }
